@@ -1,22 +1,23 @@
 // Binary Search Tree
 
-const numberArray = [
-  80, 9, 700, 40, 1, 5, 200, 10000, 33, 54, 6, 77, 56, 99, 10, 0, 0, 9, 700, 80,
-];
+// Helpers
 
-// print nodes in terminal
-const prettyPrint = (node, prefix = "", isLeft = true) => {
-  if (node === null) {
-    return;
+// check difference between both size of the tree
+function checkDiff(root) {
+  if (!root) {
+    return 0;
   }
-  if (node.rightNode !== null) {
-    prettyPrint(node.rightNode, `${prefix}${isLeft ? "│   " : "    "}`, false);
+  let leftHeight = checkDiff(root.leftNode);
+  if (leftHeight == -1) return -1;
+
+  let rightHeight = checkDiff(root.rightNode);
+  if (rightHeight == -1) return -1;
+
+  if (Math.abs(leftHeight - rightHeight) > 1) {
+    return -1;
   }
-  console.log(`${prefix}${isLeft ? "└── " : "┌── "}${node.key}`);
-  if (node.leftNode !== null) {
-    prettyPrint(node.leftNode, `${prefix}${isLeft ? "    " : "│   "}`, true);
-  }
-};
+  return Math.max(leftHeight, rightHeight) + 1;
+}
 
 // compares the numbers with each other using a callback
 function compareNumbers(a, b) {
@@ -38,7 +39,50 @@ function minKey(node) {
   return currentMin;
 }
 
-// node
+
+// insert a node
+function insertItem(root, key) {
+  //  turn into node if no this
+  if (root === null) {
+    root = new Node(key);
+    return root;
+  }
+
+  // Otherwise, recur down the tree
+  if (key < root.key) root.leftNode = insertItem(root.leftNode, key);
+  else if (key > root.key) root.rightNode = insertItem(root.rightNode, key);
+
+  // Return the (unchanged) node pointer
+  return root;
+}
+
+// delete item from tree
+function deleteItem(root, key) {
+  // base case
+  if (root === null) {
+    return root;
+  }
+
+  // recur through the tree
+  if (key < root.key) root.leftNode = deleteItem(root.leftNode, key);
+  else if (key > root.key) root.rightNode = deleteItem(root.rightNode, key);
+  else {
+    // if the node has one child
+    if (root.leftNode === null) return root.rightNode;
+    else if (root.rightNode === null) return root.leftNode;
+
+    // if the node has two children
+    root.key = minKey(root.rightNode);
+
+    // delete the in-order child
+    root.rightNode = deleteItem(root.rightNode, root.key);
+  }
+  return root;
+}
+
+// Classes
+
+
 class Node {
   constructor(key, leftNode = null, rightNode = null) {
     this.key = key;
@@ -47,9 +91,14 @@ class Node {
   }
 }
 
+
 class Tree {
-  constructor() {
-    this.root = null;
+  constructor(array = []) {
+    if (!array.length) {
+      this.root = array;
+    } else {
+      this.root = this.buildTree(removeDuplication(array.sort(compareNumbers)));
+    }
   }
 
   // build tree from an array
@@ -83,7 +132,7 @@ class Tree {
   find(key) {
     // check if key is not null
     if (key === null) {
-      return false;
+      return null;
     }
 
     //   initialize root and traverse the tree
@@ -97,7 +146,7 @@ class Tree {
         current = current.rightNode;
       }
     }
-    return false;
+    return null;
   }
 
   // print the order of the tree in breadth-first level
@@ -158,69 +207,72 @@ class Tree {
     if (!callback) return result;
   }
 
-  // height of binary tree
-  height(node, root = this.root, height = 0) {
-    if (root) {
-      if (node === root.key) return height;
-      this.height(node, root.leftNode, height++);
-      if (node === root.key) return height;
-      this.height(node, root.rightNode, height++);
-      if (node === root.key) return height;
+  // height compared to a leaf in the tree
+  height(node) {
+    if (node === null) return -1;
+    let leftHeight = this.height(node.leftNode);
+    let rightHeight = this.height(node.rightNode);
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  // depth of binary tree from root
+  depth(node, root = this.root) {
+    if (!root) {
+      return -1; // Node not found
+    }
+    if (root === node) {
+      return 0; // Found the node
+    }
+    let left_depth = this.depth(node, root.leftNode);
+    if (left_depth != -1) {
+      return left_depth + 1;
+    }
+    let right_depth = this.depth(node, root.rightNode);
+    if (right_depth != -1) {
+      return right_depth + 1;
+    }
+    return -1; // Node not found in this subtree
+  }
+
+  //  see if the left and right side node different is more than 1
+  isBalanced(root = this.root) {
+    if (!root) {
+      return 0;
+    }
+
+    if (checkDiff(root) == -1) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  reBalance() {
+    return (this.root = this.buildTree(this.inOrder()));
+  }
+
+  prettyPrint(node = this.root, prefix = "", isLeft = true) {
+    if (node === null) {
+      return;
+    }
+    if (node.rightNode !== null) {
+      this.prettyPrint(
+        node.rightNode,
+        `${prefix}${isLeft ? "│   " : "    "}`,
+        false
+      );
+    }
+    console.log(`${prefix}${isLeft ? "└── " : "┌── "}${node.key}`);
+    if (node.leftNode !== null) {
+      this.prettyPrint(
+        node.leftNode,
+        `${prefix}${isLeft ? "    " : "│   "}`,
+        true
+      );
     }
   }
 }
 
-// insert a node
-function insertItem(root, key) {
-  //  turn into node if no this
-  if (root === null) {
-    root = new Node(key);
-    return root;
-  }
 
-  // Otherwise, recur down the tree
-  if (key < root.key) root.leftNode = insertItem(root.leftNode, key);
-  else if (key > root.key) root.rightNode = insertItem(root.rightNode, key);
+module.exports = Tree;
 
-  // Return the (unchanged) node pointer
-  return root;
-}
-
-function deleteItem(root, key) {
-  // base case
-  if (root === null) {
-    return root;
-  }
-
-  // recur through the tree
-  if (key < root.key) root.leftNode = deleteItem(root.leftNode, key);
-  else if (key > root.key) root.rightNode = deleteItem(root.rightNode, key);
-  else {
-    // if the node has one child
-    if (root.leftNode === null) return root.rightNode;
-    else if (root.rightNode === null) return root.leftNode;
-
-    // if the node has two children
-    root.key = minKey(root.rightNode);
-
-    // delete the in-order child
-    root.rightNode = deleteItem(root.rightNode, root.key);
-  }
-  return root;
-}
-
-const sortedArray = removeDuplication(numberArray.sort(compareNumbers));
-console.log(sortedArray);
-const tree = new Tree();
-tree.buildTree(sortedArray);
-prettyPrint(tree.root);
-tree.insert(11);
-prettyPrint(tree.root);
-tree.delete(10);
-console.log(tree.find(11));
-prettyPrint(tree.root);
-console.log(tree.levelOrder());
-console.log(tree.inOrder());
-console.log(tree.preOrder());
-console.log(tree.postOrder());
-console.log(tree.height(10000));
